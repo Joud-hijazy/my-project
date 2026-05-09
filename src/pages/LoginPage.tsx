@@ -46,7 +46,10 @@ export default function LoginPage() {
 
     setSubmitting(true)
     try {
-      await signIn(email.trim(), password)
+      const data = await signIn(email.trim(), password)
+      const fullName = (data.user?.user_metadata?.full_name as string)?.trim()
+      const displayName = fullName || email.trim().split('@')[0]
+      sessionStorage.setItem('welcome_name', displayName)
       navigate('/', { replace: true })
     } catch (err) {
       setError(translateError((err as Error).message, t))
