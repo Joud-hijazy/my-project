@@ -1,7 +1,7 @@
-import { type FormEvent, useState, useEffect } from 'react'
+import { type FormEvent, useState, useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { signUp } from '../lib/auth'
+import { signUp, uploadAvatar } from '../lib/auth'
 import { useAuth } from '../context/AuthContext'
 import { useLang } from '../context/LanguageContext'
 
@@ -29,6 +29,16 @@ export default function RegisterPage() {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+  const [avatarFile, setAvatarFile] = useState<File | null>(null)
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
+  const avatarInputRef = useRef<HTMLInputElement>(null)
+
+  const handleAvatarPick = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setAvatarFile(file)
+    setAvatarPreview(URL.createObjectURL(file))
+  }
 
   useEffect(() => {
     if (!loading && user) navigate('/', { replace: true })
@@ -44,7 +54,10 @@ export default function RegisterPage() {
 
     setSubmitting(true)
     try {
-      await signUp(email.trim(), password, name.trim())
+      const data = await signUp(email.trim(), password, name.trim())
+      if (avatarFile && data.user) {
+        await uploadAvatar(avatarFile, data.user.id).catch(() => {})
+      }
       setSuccess(true)
     } catch (err) {
       setError(translateError((err as Error).message, lang))
@@ -145,6 +158,39 @@ export default function RegisterPage() {
             <p className="auth-subtitle">{t('register.subtitle')}</p>
 
             <form className="auth-form" onSubmit={handleSubmit} noValidate>
+
+              {/* ── Avatar picker ── */}
+              <div className="reg-avatar-wrap">
+                <input
+                  ref={avatarInputRef}
+                  type="file"
+                  accept="image/*"
+                  hidden
+                  onChange={handleAvatarPick}
+                />
+                <button
+                  type="button"
+                  className="reg-avatar-btn"
+                  onClick={() => avatarInputRef.current?.click()}
+                  title={lang === 'ar' ? 'إضافة صورة شخصية' : 'Add profile photo'}
+                >
+                  {avatarPreview
+                    ? <img src={avatarPreview} alt="preview" className="reg-avatar-preview" />
+                    : (name.trim()
+                        ? <span className="reg-avatar-initials">{name.trim()[0].toUpperCase()}</span>
+                        : <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                      )
+                  }
+                  <div className="reg-avatar-edit-icon">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                  </div>
+                </button>
+                <div className="reg-avatar-info">
+                  <span className="reg-avatar-label">{lang === 'ar' ? 'الصورة الشخصية' : 'Profile Photo'}</span>
+                  <span className="reg-avatar-hint">{avatarFile ? avatarFile.name : (lang === 'ar' ? 'اختياري — اضغط للإضافة' : 'Optional — click to add')}</span>
+                </div>
+              </div>
+
               {error && (
                 <div className="auth-alert auth-alert-error">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: 1 }}>
