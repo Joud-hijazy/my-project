@@ -92,7 +92,6 @@ const SVC_ITEMS = [
       </svg>
     ),
   },
-
 ]
 
 export default function ServicesSection() {

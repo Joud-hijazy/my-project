@@ -2,6 +2,21 @@ import { supabase } from './supabase'
 import type { RegisterResult } from './blockchain'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
+export interface ExtraFieldsCopyright {
+  work_type?: string
+  publication_date?: string
+}
+export interface ExtraFieldsTrademark {
+  nice_class?: string
+  logo_description?: string
+}
+export interface ExtraFieldsPatent {
+  technical_field?: string
+  inventors?: string
+  claims?: string
+}
+export type ExtraFields = ExtraFieldsCopyright | ExtraFieldsTrademark | ExtraFieldsPatent
+
 export interface RightsRow {
   id: number
   user_id: number | null
@@ -10,21 +25,25 @@ export interface RightsRow {
   ip_type: number
   description: string
   holder_name: string
+  holder_email: string | null
   cert_id: string
   tx_hash: string
   document_hash: string
   block_number: number
   wallet_address: string
+  extra_fields: ExtraFields | null
   created_at: string
 }
 
 export interface SaveCertParams {
-  userId: string          // Supabase auth UUID
+  userId: string
   walletAddress: string
   title: string
   ipType: number
   description: string
   holderName: string
+  holderEmail?: string
+  extraFields?: ExtraFields
   result: RegisterResult
 }
 
@@ -37,6 +56,8 @@ export async function saveCertToSupabase(params: SaveCertParams): Promise<void> 
     ip_type:       params.ipType,
     description:   params.description,
     holder_name:   params.holderName,
+    holder_email:  params.holderEmail ?? null,
+    extra_fields:  params.extraFields ?? null,
     cert_id:       params.result.certId,
     tx_hash:       params.result.txHash,
     document_hash: params.result.documentHash,
@@ -140,6 +161,18 @@ export async function getAllRights(): Promise<RightsRow[]> {
     .limit(100)
   if (error) throw error
   return (data ?? []) as RightsRow[]
+}
+
+// ─── حفظ عنوان المحفظة في ملف المستخدم ──────────────────────────────────────
+export async function saveWalletAddress(authUserId: string, walletAddress: string): Promise<void> {
+  const { error } = await supabase
+    .from('Rights')
+    .update({ wallet_address: walletAddress })
+    .eq('auth_user_id', authUserId)
+    .eq('wallet_address', '')
+  // نحفظ أيضاً في metadata المستخدم
+  await supabase.auth.updateUser({ data: { wallet_address: walletAddress } })
+  if (error) console.warn('wallet save:', error.message)
 }
 
 // ─── تقييمات الموقع ───────────────────────────────────────────────────────────

@@ -7,32 +7,6 @@ import { getAllRights, type RightsRow } from '../lib/supabase-ipr'
 
 const EASE = 'easeOut' as const
 
-// ── Star component ────────────────────────────────────────────────────────────
-function Stars({
-  value, max = 5, size = 32, interactive = false, onChange,
-}: {
-  value: number; max?: number; size?: number; interactive?: boolean; onChange?: (v: number) => void
-}) {
-  const [hover, setHover] = useState(0)
-  const display = interactive ? (hover || value) : value
-  return (
-    <div className="stars-row" onMouseLeave={() => interactive && setHover(0)}>
-      {Array.from({ length: max }, (_, i) => i + 1).map(i => (
-        <button
-          key={i}
-          type="button"
-          className={`star-btn${display >= i ? ' star-filled' : ''}`}
-          style={{ fontSize: size }}
-          onClick={() => interactive && onChange?.(i)}
-          onMouseEnter={() => interactive && setHover(i)}
-          disabled={!interactive}
-          aria-label={`${i}`}
-        >★</button>
-      ))}
-    </div>
-  )
-}
-
 // ── Right card ────────────────────────────────────────────────────────────────
 function RightCard({ row }: { row: RightsRow }) {
   const { t, lang } = useLang()

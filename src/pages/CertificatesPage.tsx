@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
+import InfoTip from '../components/InfoTip'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Link } from 'react-router-dom'
 import { useWallet } from '../hooks/useWallet'
@@ -11,6 +12,31 @@ import type { CertificateData } from '../lib/blockchain'
 import WalletConnect from '../components/WalletConnect'
 
 const EASE = 'easeOut' as const
+
+function CopyHashBtn({ hash }: { hash: string }) {
+  const [copied, setCopied] = useState(false)
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const copy = () => {
+    navigator.clipboard.writeText(hash).then(() => {
+      setCopied(true)
+      if (timerRef.current) clearTimeout(timerRef.current)
+      timerRef.current = setTimeout(() => setCopied(false), 2000)
+    })
+  }
+  return (
+    <button className="bc-copy-btn" onClick={copy} title="نسخ الهاش">
+      {copied ? (
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="20 6 9 17 4 12" />
+        </svg>
+      ) : (
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="9" y="9" width="13" height="13" rx="2" ry="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+        </svg>
+      )}
+    </button>
+  )
+}
 
 function CertCard({ cert, onTransfer }: { cert: CertificateData; onTransfer: () => void }) {
   const { t, lang } = useLang()
@@ -38,12 +64,24 @@ function CertCard({ cert, onTransfer }: { cert: CertificateData; onTransfer: () 
         </span>
         <span className={`cert-card-status${cert.isValid ? ' cert-valid' : ' cert-invalid'}`}>
           {cert.isValid ? t('my.valid') : t('my.revoked')}
+          <InfoTip
+            term={cert.isValid ? 'شهادة صالحة' : 'شهادة ملغاة'}
+            explanation={cert.isValid
+              ? 'الشهادة نشطة ومعترف بها رسمياً على البلوكشين. يمكن التحقق منها في أي وقت.'
+              : 'تم إلغاء هذه الشهادة رسمياً. لا تزال مسجلة في البلوكشين كسجل تاريخي لكنها لم تعد سارية المفعول.'}
+          />
         </span>
       </div>
 
       <div className="cert-card-hash">
-        <span className="cert-card-hash-label">{t('my.doc.hash')}</span>
-        <span className="cert-card-hash-val">{cert.documentHash.slice(0, 14)}...{cert.documentHash.slice(-8)}</span>
+        <span className="cert-card-hash-label">
+          {t('my.doc.hash')}
+          <InfoTip term="هاش الوثيقة" explanation="البصمة الرقمية الفريدة لملفك. انسخها واحتفظ بها — يمكنك مقارنتها بأي نسخة من الملف لإثبات أصالتها." />
+        </span>
+        <div className="bc-hash-row">
+          <span className="cert-card-hash-val">{cert.documentHash.slice(0, 14)}...{cert.documentHash.slice(-8)}</span>
+          <CopyHashBtn hash={cert.documentHash} />
+        </div>
       </div>
 
       {cert.isValid && (
@@ -79,6 +117,7 @@ function CertCard({ cert, onTransfer }: { cert: CertificateData; onTransfer: () 
             <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" />
           </svg>
         </a>
+        <InfoTip term="Etherscan" explanation="موقع مستقل يعرض جميع معاملات البلوكشين. اضغط لرؤية عنوان محفظتك وجميع الحقوق المسجلة عليها بشكل عام وشفاف." />
         {cert.isValid && (
           <button className="btn-cert-transfer" onClick={onTransfer}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">

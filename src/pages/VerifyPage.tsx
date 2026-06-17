@@ -1,18 +1,44 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Link } from 'react-router-dom'
+import { QRCodeSVG } from 'qrcode.react'
 import { fetchCertificate, verifyByHash, truncateAddress } from '../lib/blockchain'
 import { IP_TYPES, BLOCKCHAIN } from '../config/blockchain.config'
 import { useLang } from '../context/LanguageContext'
+import InfoTip from '../components/InfoTip'
 import type { CertificateData } from '../lib/blockchain'
 
 const EASE = 'easeOut' as const
 
 type Tab = 'id' | 'hash'
 
+function CopyButton({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false)
+  const copy = () => {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    })
+  }
+  return (
+    <button className="bc-copy-btn" onClick={copy} title="نسخ">
+      {copied ? (
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="20 6 9 17 4 12" />
+        </svg>
+      ) : (
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="9" y="9" width="13" height="13" rx="2" ry="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+        </svg>
+      )}
+    </button>
+  )
+}
+
 function CertResult({ cert }: { cert: CertificateData }) {
   const { t, lang } = useLang()
   const ipType = IP_TYPES[cert.ipType] ?? IP_TYPES[0]
+  const verifyUrl = `${window.location.origin}/verify?id=${cert.certId}`
   return (
     <div className="bc-verify-result">
       <div className="bc-verify-result-header">
@@ -31,38 +57,60 @@ function CertResult({ cert }: { cert: CertificateData }) {
         </div>
       </div>
 
-      <div className="bc-verify-details">
-        <div className="bc-vd-row">
-          <span className="bc-vd-key">{t('vfy.f.cert.id')}</span>
-          <span className="bc-vd-val bc-cert-num">#{cert.certId}</span>
-        </div>
-        <div className="bc-vd-row">
-          <span className="bc-vd-key">{t('vfy.f.holder')}</span>
-          <span className="bc-vd-val">{cert.holderName}</span>
-        </div>
-        <div className="bc-vd-row">
-          <span className="bc-vd-key">{t('vfy.f.bc.owner')}</span>
-          <span className="bc-vd-val bc-mono">{truncateAddress(cert.owner)}</span>
-        </div>
-        <div className="bc-vd-row">
-          <span className="bc-vd-key">{t('vfy.f.reg.date')}</span>
-          <span className="bc-vd-val">
-            {cert.registeredAt.toLocaleDateString(lang === 'ar' ? 'ar-EG' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
-          </span>
-        </div>
-        {cert.description && (
+      <div className="bc-verify-body">
+        <div className="bc-verify-details">
           <div className="bc-vd-row">
-            <span className="bc-vd-key">{t('vfy.f.desc')}</span>
-            <span className="bc-vd-val">{cert.description}</span>
+            <span className="bc-vd-key">
+              {t('vfy.f.cert.id')}
+              <InfoTip term="رقم الشهادة" explanation="المعرّف الفريد لشهادتك على البلوكشين. استخدمه للبحث والتحقق في أي وقت." />
+            </span>
+            <span className="bc-vd-val bc-cert-num">#{cert.certId}</span>
           </div>
-        )}
-        <div className="bc-vd-row bc-vd-row-hash">
-          <span className="bc-vd-key">{t('vfy.f.doc.hash')}</span>
-          <span className="bc-vd-val bc-mono bc-hash-break">{cert.documentHash}</span>
+          <div className="bc-vd-row">
+            <span className="bc-vd-key">{t('vfy.f.holder')}</span>
+            <span className="bc-vd-val">{cert.holderName}</span>
+          </div>
+          <div className="bc-vd-row">
+            <span className="bc-vd-key">
+              {t('vfy.f.bc.owner')}
+              <InfoTip term="عنوان المحفظة" explanation="عنوانك الفريد على شبكة البلوكشين. مثل رقم حسابك المصرفي — عام ويمكن مشاركته، لكن المفتاح الخاص للمحفظة يجب أن يبقى سرياً." />
+            </span>
+            <span className="bc-vd-val bc-mono">{truncateAddress(cert.owner)}</span>
+          </div>
+          <div className="bc-vd-row">
+            <span className="bc-vd-key">{t('vfy.f.reg.date')}</span>
+            <span className="bc-vd-val">
+              {cert.registeredAt.toLocaleDateString(lang === 'ar' ? 'ar-EG' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+            </span>
+          </div>
+          {cert.description && (
+            <div className="bc-vd-row">
+              <span className="bc-vd-key">{t('vfy.f.desc')}</span>
+              <span className="bc-vd-val">{cert.description}</span>
+            </div>
+          )}
+          <div className="bc-vd-row bc-vd-row-hash">
+            <span className="bc-vd-key">
+              {t('vfy.f.doc.hash')}
+              <InfoTip term="هاش الوثيقة" explanation="البصمة الرقمية للملف المسجّل. يمكنك التحقق منها بنفسك: احسب هاش ملفك وقارنه بهذا الرقم — أي تطابق يعني أن الملف أصلي ولم يُعدَّل." />
+            </span>
+            <div className="bc-hash-row">
+              <span className="bc-vd-val bc-mono bc-hash-break">{cert.documentHash.slice(0, 20)}...{cert.documentHash.slice(-10)}</span>
+              <CopyButton text={cert.documentHash} />
+            </div>
+          </div>
+        </div>
+
+        <div className="bc-verify-qr">
+          <QRCodeSVG value={verifyUrl} size={120} bgColor="transparent" fgColor="#60a5fa" level="M" />
+          <p className="bc-qr-label">
+            {t('vfy.qr.label')}
+            <InfoTip term="رمز QR" explanation="امسحه بكاميرا هاتفك مباشرة. سيفتح صفحة التحقق من هذه الشهادة تلقائياً — يمكن مشاركته مع أي جهة للتحقق الفوري." size={12} />
+          </p>
         </div>
       </div>
 
-      <div className="bc-verify-actions">
+      <div className="bc-verify-actions bc-verify-actions-row">
         <a
           href={`${BLOCKCHAIN.EXPLORER}/address/${cert.owner}`}
           target="_blank"
@@ -74,6 +122,11 @@ function CertResult({ cert }: { cert: CertificateData }) {
             <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" />
           </svg>
         </a>
+        <InfoTip
+          term="Etherscan"
+          explanation="موقع مستقل يعرض جميع معاملات شبكة Ethereum علناً. يمكنك التحقق من شهادتك بشكل مستقل تماماً دون الحاجة للمنصة."
+          size={16}
+        />
       </div>
     </div>
   )

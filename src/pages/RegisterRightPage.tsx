@@ -3,11 +3,12 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Link } from 'react-router-dom'
 import { useWallet } from '../hooks/useWallet'
 import { registerIPOnChain, hashFile, isContractDeployed } from '../lib/blockchain'
-import { saveCertToSupabase, uploadIPFile } from '../lib/supabase-ipr'
+import { saveCertToSupabase, uploadIPFile, type ExtraFields } from '../lib/supabase-ipr'
 import { useAuth } from '../context/AuthContext'
 import { useLang } from '../context/LanguageContext'
 import { IP_TYPES, BLOCKCHAIN } from '../config/blockchain.config'
 import WalletConnect from '../components/WalletConnect'
+import InfoTip from '../components/InfoTip'
 import { playSuccess, playError } from '../lib/sounds'
 
 const EASE = 'easeOut' as const
@@ -19,6 +20,17 @@ interface FormData {
   ipType: number
   description: string
   holderName: string
+  holderEmail: string
+  // copyright (0)
+  workType: string
+  publicationDate: string
+  // trademark (1)
+  niceClass: string
+  logoDescription: string
+  // patent (2)
+  technicalField: string
+  inventors: string
+  claims: string
 }
 
 interface Result {
@@ -46,14 +58,38 @@ export default function RegisterRightPage() {
   const { user } = useAuth()
   const { t } = useLang()
   const [step, setStep] = useState<Step>('form')
-  const [form, setForm] = useState<FormData>({ title: '', ipType: 0, description: '', holderName: '' })
+  const [form, setForm] = useState<FormData>({
+    title: '', ipType: 0, description: '', holderName: '', holderEmail: '',
+    workType: '', publicationDate: '',
+    niceClass: '', logoDescription: '',
+    technicalField: '', inventors: '', claims: '',
+  })
 
   useEffect(() => {
     const savedName = user?.user_metadata?.full_name as string | undefined
-    if (savedName) {
-      setForm(f => ({ ...f, holderName: f.holderName || savedName }))
-    }
+    const savedEmail = user?.email as string | undefined
+    setForm(f => ({
+      ...f,
+      holderName: f.holderName || savedName || '',
+      holderEmail: f.holderEmail || savedEmail || '',
+    }))
   }, [user])
+
+  const buildExtraFields = (): ExtraFields | undefined => {
+    if (form.ipType === 0) {
+      const ef = { work_type: form.workType || undefined, publication_date: form.publicationDate || undefined }
+      return Object.values(ef).some(Boolean) ? ef : undefined
+    }
+    if (form.ipType === 1) {
+      const ef = { nice_class: form.niceClass || undefined, logo_description: form.logoDescription || undefined }
+      return Object.values(ef).some(Boolean) ? ef : undefined
+    }
+    if (form.ipType === 2) {
+      const ef = { technical_field: form.technicalField || undefined, inventors: form.inventors || undefined, claims: form.claims || undefined }
+      return Object.values(ef).some(Boolean) ? ef : undefined
+    }
+    return undefined
+  }
   const [processing, setProcessing] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [result, setResult] = useState<Result | null>(null)
@@ -103,6 +139,8 @@ export default function RegisterRightPage() {
             ipType:        form.ipType,
             description:   form.description,
             holderName:    form.holderName,
+            holderEmail:   form.holderEmail || undefined,
+            extraFields:   buildExtraFields(),
             result:        res,
           })
           if (file) {
@@ -306,6 +344,17 @@ export default function RegisterRightPage() {
                 </div>
 
                 <div className="bc-form-group">
+                  <label className="bc-label">{t('rr.f.email')} <span className="bc-optional">{t('rr.optional')}</span></label>
+                  <input
+                    className="bc-input"
+                    type="email"
+                    placeholder={t('rr.ph.email')}
+                    value={form.holderEmail}
+                    onChange={e => setForm(f => ({ ...f, holderEmail: e.target.value }))}
+                  />
+                </div>
+
+                <div className="bc-form-group">
                   <label className="bc-label">{t('rr.f.desc')} <span className="bc-optional">{t('rr.optional')}</span></label>
                   <textarea
                     className="bc-input bc-textarea"
@@ -315,6 +364,63 @@ export default function RegisterRightPage() {
                     onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
                   />
                 </div>
+
+                {/* حقوق النشر */}
+                {form.ipType === 0 && (
+                  <div className="bc-extra-fields">
+                    <div className="bc-extra-fields-label">{t('rr.extra.copyright')}</div>
+                    <div className="bc-form-group">
+                      <label className="bc-label">{t('rr.f.work_type')} <span className="bc-optional">{t('rr.optional')}</span></label>
+                      <select className="bc-input bc-select" value={form.workType} onChange={e => setForm(f => ({ ...f, workType: e.target.value }))}>
+                        <option value="">{t('rr.ph.work_type')}</option>
+                        <option value="book">كتاب</option>
+                        <option value="software">برنامج / تطبيق</option>
+                        <option value="image">صورة / رسم</option>
+                        <option value="music">موسيقى / صوت</option>
+                        <option value="video">فيلم / مقطع</option>
+                        <option value="other">أخرى</option>
+                      </select>
+                    </div>
+                    <div className="bc-form-group">
+                      <label className="bc-label">{t('rr.f.pub_date')} <span className="bc-optional">{t('rr.optional')}</span></label>
+                      <input type="date" className="bc-input" value={form.publicationDate} onChange={e => setForm(f => ({ ...f, publicationDate: e.target.value }))} />
+                    </div>
+                  </div>
+                )}
+
+                {/* العلامات التجارية */}
+                {form.ipType === 1 && (
+                  <div className="bc-extra-fields">
+                    <div className="bc-extra-fields-label">{t('rr.extra.trademark')}</div>
+                    <div className="bc-form-group">
+                      <label className="bc-label">{t('rr.f.nice_class')} <span className="bc-optional">{t('rr.optional')}</span></label>
+                      <input className="bc-input" placeholder={t('rr.ph.nice_class')} value={form.niceClass} onChange={e => setForm(f => ({ ...f, niceClass: e.target.value }))} />
+                    </div>
+                    <div className="bc-form-group">
+                      <label className="bc-label">{t('rr.f.logo_desc')} <span className="bc-optional">{t('rr.optional')}</span></label>
+                      <textarea className="bc-input bc-textarea" rows={2} placeholder={t('rr.ph.logo_desc')} value={form.logoDescription} onChange={e => setForm(f => ({ ...f, logoDescription: e.target.value }))} />
+                    </div>
+                  </div>
+                )}
+
+                {/* براءات الاختراع */}
+                {form.ipType === 2 && (
+                  <div className="bc-extra-fields">
+                    <div className="bc-extra-fields-label">{t('rr.extra.patent')}</div>
+                    <div className="bc-form-group">
+                      <label className="bc-label">{t('rr.f.tech_field')} <span className="bc-optional">{t('rr.optional')}</span></label>
+                      <input className="bc-input" placeholder={t('rr.ph.tech_field')} value={form.technicalField} onChange={e => setForm(f => ({ ...f, technicalField: e.target.value }))} />
+                    </div>
+                    <div className="bc-form-group">
+                      <label className="bc-label">{t('rr.f.inventors')} <span className="bc-optional">{t('rr.optional')}</span></label>
+                      <input className="bc-input" placeholder={t('rr.ph.inventors')} value={form.inventors} onChange={e => setForm(f => ({ ...f, inventors: e.target.value }))} />
+                    </div>
+                    <div className="bc-form-group">
+                      <label className="bc-label">{t('rr.f.claims')} <span className="bc-optional">{t('rr.optional')}</span></label>
+                      <textarea className="bc-input bc-textarea" rows={3} placeholder={t('rr.ph.claims')} value={form.claims} onChange={e => setForm(f => ({ ...f, claims: e.target.value }))} />
+                    </div>
+                  </div>
+                )}
 
                 <div className="bc-form-group">
                   <label className="bc-label">
@@ -343,6 +449,7 @@ export default function RegisterRightPage() {
                           {fileHash && !hashing && (
                             <p className="file-upload-hash">
                               SHA-256: {fileHash.slice(0, 14)}...{fileHash.slice(-6)}
+                              <InfoTip term="SHA-256" explanation="خوارزمية تحوّل ملفك إلى بصمة رقمية فريدة (64 حرفاً). إذا تغيّر حرف واحد في الملف تتغير البصمة كاملاً — دليل قاطع أن الملف لم يُعدَّل." />
                             </p>
                           )}
                         </div>
@@ -379,7 +486,7 @@ export default function RegisterRightPage() {
               <p className="bc-card-desc">{t('rr.confirm.desc')}</p>
 
               <p className="bc-section-label">{t('rr.wallet.status')}</p>
-              <WalletConnect />
+              <WalletConnect showHint />
 
               <p className="bc-section-label" style={{ marginTop: 28 }}>{t('rr.summary')}</p>
               <div className="bc-review-box">
@@ -411,7 +518,7 @@ export default function RegisterRightPage() {
                 )}
                 {fileHash && (
                   <div className="bc-review-row">
-                    <span className="bc-review-key">{t('rr.rf.hash')}</span>
+                    <span className="bc-review-key">{t('rr.rf.hash')} <InfoTip term="هاش الوثيقة" explanation="بصمة رقمية فريدة لملفك تُحسب بخوارزمية SHA-256. تُخزَّن في البلوكشين كدليل على أصالة الملف في وقت التسجيل." /></span>
                     <span className="bc-review-val bc-mono-sm">{fileHash.slice(0, 14)}...{fileHash.slice(-6)}</span>
                   </div>
                 )}
@@ -424,6 +531,7 @@ export default function RegisterRightPage() {
                   <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
                 </svg>
                 {t('rr.gas.note')}
+                <InfoTip term="رسوم الغاز (Gas)" explanation="رسوم رمزية صغيرة تُدفع لشبكة البلوكشين مقابل تنفيذ العملية. على شبكة Sepolia التجريبية هي مجانية — ETH تجريبي فقط." />
               </div>
 
               <div className="bc-confirm-actions">
@@ -464,11 +572,17 @@ export default function RegisterRightPage() {
 
               <div className="bc-cert-result-box">
                 <div className="bc-cert-row-item">
-                  <span className="bc-cert-rkey">{t('rr.result.cert.id')}</span>
+                  <span className="bc-cert-rkey">
+                    {t('rr.result.cert.id')}
+                    <InfoTip term="رقم الشهادة" explanation="معرّف فريد لشهادتك على البلوكشين. احتفظ به لأنك ستحتاجه للتحقق من شهادتك لاحقاً." />
+                  </span>
                   <span className="bc-cert-rval bc-cert-id-big">#{result.certId}</span>
                 </div>
                 <div className="bc-cert-row-item">
-                  <span className="bc-cert-rkey">{t('rr.result.tx')}</span>
+                  <span className="bc-cert-rkey">
+                    {t('rr.result.tx')}
+                    <InfoTip term="هاش المعاملة (TX Hash)" explanation="رقم إيصال معاملتك على البلوكشين. يمكنك من خلاله التحقق من تسجيل حقك على Etherscan في أي وقت ومن أي مكان." />
+                  </span>
                   <a
                     className="bc-cert-rval bc-hash-link"
                     href={`${BLOCKCHAIN.EXPLORER}/tx/${result.txHash}`}
@@ -479,11 +593,17 @@ export default function RegisterRightPage() {
                   </a>
                 </div>
                 <div className="bc-cert-row-item">
-                  <span className="bc-cert-rkey">{t('rr.result.hash')}</span>
+                  <span className="bc-cert-rkey">
+                    {t('rr.result.hash')}
+                    <InfoTip term="هاش الوثيقة" explanation="البصمة الرقمية لملفك المرفق. تُثبت أن الملف لم يُعدَّل منذ لحظة التسجيل — حتى تغيير مسافة واحدة يغيّر الهاش كاملاً." />
+                  </span>
                   <span className="bc-cert-rval bc-mono-sm">{result.documentHash.slice(0, 18)}...{result.documentHash.slice(-8)}</span>
                 </div>
                 <div className="bc-cert-row-item">
-                  <span className="bc-cert-rkey">{t('rr.result.block')}</span>
+                  <span className="bc-cert-rkey">
+                    {t('rr.result.block')}
+                    <InfoTip term="رقم الكتلة" explanation="معاملاتك تُجمَّع في 'كتل' على البلوكشين. هذا الرقم يحدد في أي كتلة تم تسجيل حقك — ويُثبت توقيت التسجيل بدقة." />
+                  </span>
                   <span className="bc-cert-rval">{result.blockNumber}</span>
                 </div>
               </div>
