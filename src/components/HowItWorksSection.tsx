@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useLang } from '../context/LanguageContext'
 
+
 const EASE = 'easeOut' as const
 
 // ── Mockup screens ──────────────────────────────────────────────────────────
@@ -18,7 +19,7 @@ function MockupSignup() {
         <div className="hiw-mock-heading">إنشاء حساب جديد</div>
         <div className="hiw-mock-field">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
-          sara@example.com
+          example@example.com
         </div>
         <div className="hiw-mock-field">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
@@ -183,71 +184,53 @@ interface Slide {
   num: string
   color: string
   bg: string
-  titleAr: string; titleEn: string
-  descAr: string;  descEn: string
-  tipsAr: string[]; tipsEn: string[]
+  title: string
+  desc: string
+  tips: string[]
   mockup: React.ReactNode
 }
 
 const SLIDES: Slide[] = [
   {
     num: '01', color: '#3b82f6', bg: 'rgba(59,130,246,0.1)',
-    titleAr: 'أنشئ حسابك في دقيقة',
-    titleEn: 'Create Your Account',
-    descAr: 'سجّل بريدك الإلكتروني وكلمة مرور. ستصلك رسالة تأكيد فورية، وبعدها تكون جاهزاً للبدء.',
-    descEn: 'Register with your email and a password. You\'ll receive a confirmation email and can start immediately.',
-    tipsAr: ['التسجيل مجاني تماماً', 'لا حاجة لبيانات بنكية', 'تأكيد فوري على بريدك'],
-    tipsEn: ['Registration is completely free', 'No payment info needed', 'Instant email confirmation'],
+    title: 'أنشئ حسابك في دقيقة',
+    desc: 'سجّل بريدك الإلكتروني وكلمة مرور. ستصلك رسالة تأكيد فورية، وبعدها تكون جاهزاً للبدء.',
+    tips: ['التسجيل مجاني تماماً', 'لا حاجة لبيانات بنكية', 'تأكيد فوري على بريدك'],
     mockup: <MockupSignup />,
   },
   {
     num: '02', color: '#8b5cf6', bg: 'rgba(139,92,246,0.1)',
-    titleAr: 'اربط محفظة البلوكشين',
-    titleEn: 'Connect Your Blockchain Wallet',
-    descAr: 'ربط محفظة MetaMask يمنحك هوية رقمية فريدة على شبكة Ethereum. إذا لم تكن لديك محفظة، يوجد دليل مفصل داخل الموقع.',
-    descEn: 'Connecting MetaMask gives you a unique digital identity on Ethereum. No wallet? We\'ll guide you through every step.',
-    tipsAr: ['محفظة MetaMask مجانية', 'استخدام شبكة Sepolia التجريبية', 'لا تكلفة حقيقية على التسجيل'],
-    tipsEn: ['MetaMask is free to install', 'Uses Sepolia testnet', 'No real cost to register'],
+    title: 'اربط محفظة البلوكشين',
+    desc: 'ربط محفظة MetaMask يمنحك هوية رقمية فريدة على شبكة Ethereum. إذا لم تكن لديك محفظة، يوجد دليل مفصل داخل الموقع.',
+    tips: ['محفظة MetaMask مجانية', 'استخدام شبكة Sepolia التجريبية', 'لا تكلفة حقيقية على التسجيل'],
     mockup: <MockupWallet />,
   },
   {
     num: '03', color: '#0ea5e9', bg: 'rgba(14,165,233,0.1)',
-    titleAr: 'اختر نوع حقك الفكري',
-    titleEn: 'Choose Your IP Type',
-    descAr: 'كل نوع له نموذج مخصص بحقول مختلفة. حقوق النشر للكتب والبرامج، العلامات التجارية للشعارات، وبراءات الاختراع للاكتشافات التقنية.',
-    descEn: 'Each type has its own dedicated form. Copyright for books/software, trademarks for logos, patents for inventions.',
-    tipsAr: ['3 أنواع مدعومة', 'حقول مخصصة لكل نوع', 'كل الحقول موضحة بمثال'],
-    tipsEn: ['3 IP types supported', 'Custom fields per type', 'All fields have examples'],
+    title: 'اختر نوع حقك الفكري',
+    desc: 'كل نوع له نموذج مخصص بحقول مختلفة. حقوق النشر للكتب والبرامج، العلامات التجارية للشعارات، وبراءات الاختراع للاكتشافات التقنية.',
+    tips: ['3 أنواع مدعومة', 'حقول مخصصة لكل نوع', 'كل الحقول موضحة بمثال'],
     mockup: <MockupIPType />,
   },
   {
     num: '04', color: '#22c55e', bg: 'rgba(34,197,94,0.1)',
-    titleAr: 'ارفع الملف واحسب البصمة',
-    titleEn: 'Upload File & Compute Hash',
-    descAr: 'ارفع الملف الذي تريد حمايته. سيتم حساب بصمته الرقمية (SHA-256) تلقائياً في متصفحك دون إرسالها للخادم.',
-    descEn: 'Upload the file you want to protect. Its digital fingerprint (SHA-256) is calculated locally in your browser.',
-    tipsAr: ['الحساب يتم محلياً في المتصفح', 'الملف لا يُرفع للسيرفر', 'SHA-256 = ضمان عدم التغيير'],
-    tipsEn: ['Hash computed locally in browser', 'File never sent to server', 'SHA-256 proves file integrity'],
+    title: 'ارفع الملف واحسب البصمة',
+    desc: 'ارفع الملف الذي تريد حمايته. سيتم حساب بصمته الرقمية (SHA-256) تلقائياً في متصفحك دون إرسالها للخادم.',
+    tips: ['الحساب يتم محلياً في المتصفح', 'الملف لا يُرفع للسيرفر', 'SHA-256 = ضمان عدم التغيير'],
     mockup: <MockupUpload />,
   },
   {
     num: '05', color: '#f59e0b', bg: 'rgba(245,158,11,0.1)',
-    titleAr: 'سجّل على البلوكشين',
-    titleEn: 'Register on Blockchain',
-    descAr: 'بنقرة واحدة يُرسل طلبك لشبكة Ethereum. MetaMask ستطلب موافقتك، وبعد التأكيد تصبح شهادتك دائمة لا يمكن حذفها أو تعديلها.',
-    descEn: 'One click sends your request to Ethereum. MetaMask will ask for approval, then your certificate is permanent and immutable.',
-    tipsAr: ['الشهادة دائمة لا تُحذف', 'رقم الكتلة دليل التوقيت', 'يمكن التحقق عبر Etherscan'],
-    tipsEn: ['Certificate is permanent', 'Block number proves timing', 'Verifiable via Etherscan'],
+    title: 'سجّل على البلوكشين',
+    desc: 'بنقرة واحدة يُرسل طلبك لشبكة Ethereum. MetaMask ستطلب موافقتك، وبعد التأكيد تصبح شهادتك دائمة لا يمكن حذفها أو تعديلها.',
+    tips: ['الشهادة دائمة لا تُحذف', 'رقم الكتلة دليل التوقيت', 'يمكن التحقق عبر Etherscan'],
     mockup: <MockupBlockchain />,
   },
   {
     num: '06', color: '#ec4899', bg: 'rgba(236,72,153,0.1)',
-    titleAr: 'شهادتك جاهزة للمشاركة',
-    titleEn: 'Your Certificate is Ready',
-    descAr: 'احصل على رقم الشهادة ورمز QR. شاركهما مع أي جهة قانونية أو شخصية للتحقق الفوري من أصالة عملك دون الحاجة للمنصة.',
-    descEn: 'Get your certificate number and QR code. Share with anyone for instant verification, no platform required.',
-    tipsAr: ['QR code للمشاركة الفورية', 'التحقق يعمل دون حساب', 'مقبول كدليل قانوني'],
-    tipsEn: ['QR code for instant sharing', 'Verification works without login', 'Accepted as legal proof'],
+    title: 'شهادتك جاهزة للمشاركة',
+    desc: 'احصل على رقم الشهادة ورمز QR. شاركهما مع أي جهة قانونية أو شخصية للتحقق الفوري من أصالة عملك دون الحاجة للمنصة.',
+    tips: ['QR code للمشاركة الفورية', 'التحقق يعمل دون حساب', 'مقبول كدليل قانوني'],
     mockup: <MockupCertificate />,
   },
 ]
@@ -255,7 +238,7 @@ const SLIDES: Slide[] = [
 // ── Main component ───────────────────────────────────────────────────────────
 
 export default function HowItWorksSection() {
-  const { t, lang } = useLang()
+  const { t } = useLang()
   const [active, setActive] = useState(0)
   const [dir, setDir] = useState(1)
 
@@ -269,12 +252,12 @@ export default function HowItWorksSection() {
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (e.key === 'ArrowLeft')  lang === 'ar' ? next() : prev()
-      if (e.key === 'ArrowRight') lang === 'ar' ? prev() : next()
+      if (e.key === 'ArrowLeft')  next()
+      if (e.key === 'ArrowRight') prev()
     }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
-  }, [prev, next, lang])
+  }, [prev, next])
 
   const slide = SLIDES[active]
 
@@ -327,13 +310,13 @@ export default function HowItWorksSection() {
                     الخطوة {slide.num}
                   </div>
                   <h3 className="hiw-slide-title">
-                    {lang === 'ar' ? slide.titleAr : slide.titleEn}
+                    {slide.title}
                   </h3>
                   <p className="hiw-slide-desc">
-                    {lang === 'ar' ? slide.descAr : slide.descEn}
+                    {slide.desc}
                   </p>
                   <ul className="hiw-slide-tips">
-                    {(lang === 'ar' ? slide.tipsAr : slide.tipsEn).map((tip, i) => (
+                    {slide.tips.map((tip, i) => (
                       <li key={i}>
                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={slide.color} strokeWidth="3" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
                         {tip}
